@@ -41,7 +41,7 @@ def rewrite_query_node(state: AgentState) -> Dict[str, Any]:
 
     try:
         result: QueryRewrite = structured_rewriter.invoke(messages)
-        new_query = result.improved_query
+        new_query = getattr(result, "improved_query", None) or getattr(result, "rewritten_query", None) or str(result)
         reasoning = result.reasoning
     except Exception as e:
         logger.error(f"[Rewriter Node] Fallback rewrite due to error: {e}")

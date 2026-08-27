@@ -35,5 +35,11 @@ class GradeAnswer(BaseModel):
 
 class QueryRewrite(BaseModel):
     """Refined query produced by the rewriter node."""
-    rewritten_query: str = Field(description="The reformulated, optimized search query.")
+    improved_query: str = Field(
+        alias="rewritten_query",
+        description="The reformulated, optimized search query."
+    )
     reasoning: str = Field(description="Why the query was rewritten.")
+
+    class Config:
+        populate_by_name = True
