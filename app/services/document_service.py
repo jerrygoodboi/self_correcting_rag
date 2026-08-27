@@ -1,5 +1,7 @@
 import os
+import io
 from typing import List, Optional
+import pypdf
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.services.vector_service import vector_service
@@ -15,6 +17,22 @@ class DocumentService:
             chunk_overlap=chunk_overlap,
             separators=["\n\n", "\n", " ", ""],
         )
+
+    def extract_text_from_bytes(self, content_bytes: bytes, filename: str = "") -> str:
+        """Extract text from raw bytes, handling PDF, Markdown, Text, and JSON."""
+        if filename.lower().endswith(".pdf") or content_bytes.startswith(b"%PDF"):
+            try:
+                reader = pypdf.PdfReader(io.BytesIO(content_bytes))
+                text_pages = [page.extract_text() or "" for page in reader.pages]
+                extracted_text = "\n\n".join(text_pages).strip()
+                if not extracted_text:
+                    raise ValueError("Could not extract any text from PDF.")
+                return extracted_text
+            except Exception as e:
+                logger.error(f"Error parsing PDF bytes for '{filename}': {e}")
+                raise ValueError(f"Failed to parse PDF: {e}")
+        else:
+            return content_bytes.decode("utf-8", errors="ignore")
 
     def ingest_text(self, text: str, title: str, metadata: Optional[dict] = None) -> int:
         meta = metadata or {}
@@ -33,11 +51,13 @@ class DocumentService:
             raise FileNotFoundError(f"File not found: {file_path}")
 
         filename = os.path.basename(file_path)
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-            content = f.read()
+        with open(file_path, "rb") as f:
+            content_bytes = f.read()
+
+        text = self.extract_text_from_bytes(content_bytes, filename=filename)
 
         return self.ingest_text(
-            text=content,
+            text=text,
             title=filename,
             metadata={"source": file_path, "file_name": filename}
         )
@@ -49,7 +69,7 @@ class DocumentService:
         total_chunks = 0
         for root, _, files in os.walk(dir_path):
             for file in files:
-                if file.endswith((".md", ".txt", ".json", ".rst")):
+                if file.endswith((".md", ".txt", ".json", ".rst", ".pdf")):
                     full_path = os.path.join(root, file)
                     try:
                         chunks = self.ingest_file(full_path)

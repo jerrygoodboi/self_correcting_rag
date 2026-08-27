@@ -29,21 +29,23 @@ def ingest_text_document(payload: IngestTextRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/ingest/file", response_model=IngestResponse, summary="Upload and Ingest File")
+@router.post("/ingest/file", response_model=IngestResponse, summary="Upload and Ingest File (PDF, TXT, MD, JSON)")
 async def ingest_file_document(
     file: UploadFile = File(...),
     title: Optional[str] = Form(None)
 ):
-    """Uploads a markdown, text, or json file, parses and chunks it into Chroma vector store."""
+    """Uploads a PDF, Markdown, Text, or JSON file, parses and chunks it into Chroma vector store."""
     try:
         content_bytes = await file.read()
-        text = content_bytes.decode("utf-8", errors="ignore")
-        doc_title = title or file.filename or "Uploaded File"
+        filename = file.filename or "uploaded_file"
+        doc_title = title or filename
+
+        text = document_service.extract_text_from_bytes(content_bytes, filename=filename)
         
         chunks_count = document_service.ingest_text(
             text=text,
             title=doc_title,
-            metadata={"source": file.filename, "file_name": file.filename},
+            metadata={"source": filename, "file_name": filename},
         )
         total_docs = vector_service().count()
         return IngestResponse(
