@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 class RouteQuery(BaseModel):
     """Route a user query to the most appropriate datasource or direct generation."""
     datasource: str = Field(
-        description="Routing decision: strictly 'vectorstore' for factual/document questions or 'direct_answer' for greetings/persona queries."
+        description="Routing decision: 'vectorstore' if the query asks about custom documents/files/people/systems in the knowledge base, or 'direct_answer' for general world facts/trivia/greetings."
     )
     reasoning: str = Field(description="Brief reason for the routing choice.")
 
