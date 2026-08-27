@@ -1,62 +1,39 @@
-from typing import Literal
 from pydantic import BaseModel, Field
 
 
 class RouteQuery(BaseModel):
-    """Route user query to vectorstore or direct conversational answer."""
-    datasource: Literal["vectorstore", "direct_answer"] = Field(
-        ...,
-        description="Given a user query, choose whether to route it to 'vectorstore' for knowledge retrieval or 'direct_answer' for chit-chat, greetings, or common reasoning.",
+    """Route a user query to the most appropriate datasource or direct generation."""
+    datasource: str = Field(
+        description="Routing decision: strictly 'vectorstore' for factual/document questions or 'direct_answer' for greetings/persona queries."
     )
-    reasoning: str = Field(
-        ...,
-        description="Explanation of why this routing decision was made.",
-    )
+    reasoning: str = Field(description="Brief reason for the routing choice.")
 
 
 class GradeDocument(BaseModel):
-    """Binary score for document relevance to the query."""
-    binary_score: Literal["yes", "no"] = Field(
-        ...,
-        description="Whether the document is relevant to the user query ('yes' or 'no').",
+    """Binary score for document topical relevance check."""
+    binary_score: str = Field(
+        description="Strictly 'yes' if document text discusses or mentions the question's topic/keywords (even if counterfactual or custom). 'no' ONLY if entirely off-topic."
     )
-    explanation: str = Field(
-        ...,
-        description="Brief justification of why the document is or is not relevant.",
-    )
+    explanation: str = Field(description="Brief explanation of topical relation.")
 
 
 class GradeHallucinations(BaseModel):
-    """Binary score for factual grounding against documents."""
-    binary_score: Literal["yes", "no"] = Field(
-        ...,
-        description="Whether the answer is grounded in and supported by the retrieved facts ('yes' for grounded, 'no' for hallucinated/unsupported).",
+    """Binary score for factual grounding against reference documents."""
+    binary_score: str = Field(
+        description="Strictly 'yes' if the answer is grounded in and faithful to reference facts. 'no' if it invents unsupported facts."
     )
-    explanation: str = Field(
-        ...,
-        description="Brief justification of whether the answer is grounded in facts.",
-    )
+    explanation: str = Field(description="Brief explanation of grounding assessment.")
 
 
 class GradeAnswer(BaseModel):
-    """Binary score to assess if the answer resolves the user query."""
-    binary_score: Literal["yes", "no"] = Field(
-        ...,
-        description="Whether the generated answer directly resolves and addresses the user's question ('yes' or 'no').",
+    """Binary score to assess if the answer addresses the user question."""
+    binary_score: str = Field(
+        description="Strictly 'yes' if the answer resolves the question using the available context. 'no' if evasive or unhelpful."
     )
-    explanation: str = Field(
-        ...,
-        description="Brief justification of how well the answer addresses the query.",
-    )
+    explanation: str = Field(description="Brief explanation of usefulness assessment.")
 
 
 class QueryRewrite(BaseModel):
-    """Rewritten query optimized for vector store retrieval."""
-    improved_query: str = Field(
-        ...,
-        description="The reformulated, clear, keyword-rich query optimized for semantic document retrieval.",
-    )
-    reasoning: str = Field(
-        ...,
-        description="Rationale behind the query transformation.",
-    )
+    """Refined query produced by the rewriter node."""
+    rewritten_query: str = Field(description="The reformulated, optimized search query.")
+    reasoning: str = Field(description="Why the query was rewritten.")
