@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # LLM Settings
     gemini_api_key: str = ""
-    llm_model: str = "gemini-2.5-flash"
+    llm_model: str = "gemini-2.5-flash-lite"
     llm_temperature: float = 0.0
     embedding_model: str = "gemini-embedding-001"
 
