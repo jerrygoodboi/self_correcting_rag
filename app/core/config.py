@@ -2,6 +2,8 @@ import os
 from typing import Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -37,6 +39,13 @@ class Settings(BaseSettings):
     # Vector Store
     chroma_persist_dir: str = "./data/chromadb"
     chroma_collection_name: str = "knowledge_base"
+
+    @property
+    def chroma_persist_dir_abs(self) -> str:
+        """Always return the resolved absolute path for ChromaDB."""
+        if os.path.isabs(self.chroma_persist_dir):
+            return self.chroma_persist_dir
+        return os.path.abspath(os.path.join(ROOT_DIR, self.chroma_persist_dir))
 
     # PostgreSQL Checkpointer Settings
     use_postgres_checkpointer: bool = True

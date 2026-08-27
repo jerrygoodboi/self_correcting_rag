@@ -12,7 +12,7 @@ class VectorService:
     _instance: Optional["VectorService"] = None
 
     def __init__(self):
-        os.makedirs(settings.chroma_persist_dir, exist_ok=True)
+        os.makedirs(settings.chroma_persist_dir_abs, exist_ok=True)
         self.embeddings = get_embeddings()
         self._init_vector_store()
 
@@ -20,9 +20,9 @@ class VectorService:
         self.vector_store = Chroma(
             collection_name=settings.chroma_collection_name,
             embedding_function=self.embeddings,
-            persist_directory=settings.chroma_persist_dir,
+            persist_directory=settings.chroma_persist_dir_abs,
         )
-        logger.info(f"Initialized Chroma vector store in '{settings.chroma_persist_dir}' with collection '{settings.chroma_collection_name}'")
+        logger.info(f"Initialized Chroma vector store in '{settings.chroma_persist_dir_abs}' with collection '{settings.chroma_collection_name}'")
 
     @classmethod
     def get_instance(cls) -> "VectorService":
@@ -50,7 +50,6 @@ class VectorService:
     def delete_by_source(self, source_name: str) -> None:
         """Deletes all chunks matching a specific source file to prevent duplicates."""
         try:
-            # Delete by metadata filter
             self.vector_store.delete(where={"file_name": source_name})
             logger.info(f"Deleted existing vector chunks for source: '{source_name}'")
         except Exception as e:
