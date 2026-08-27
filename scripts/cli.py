@@ -29,15 +29,10 @@ def print_banner():
 
 def interactive_repl():
     print_banner()
-    
-    # Auto-sync sample docs on startup
-    synced = document_service.auto_sync_sample_docs()
-    if synced > 0:
-        console.print(f"[green]✓ Auto-synced {synced} new document chunks from sample_docs/[/green]")
 
     thread_id = str(uuid.uuid4())[:8]
     console.print(f"[bold yellow]Session Thread ID:[/bold yellow] [bold green]{thread_id}[/bold green]")
-    console.print(f"[bold yellow]Indexed Vector Chunks:[/bold yellow] [bold white]{vector_service().count()}[/bold white]\n")
+    console.print(f"[bold yellow]Indexed Vector Chunks in ChromaDB:[/bold yellow] [bold white]{vector_service().count()}[/bold white]\n")
 
     while True:
         try:
@@ -87,11 +82,6 @@ def interactive_repl():
                         "  [bold green]exit[/bold green]               - Quits the CLI\n"
                     )
                     continue
-
-            # Auto-sync any newly added files before processing query
-            new_synced = document_service.auto_sync_sample_docs()
-            if new_synced > 0:
-                console.print(f"[dim green]✓ Auto-detected and indexed {new_synced} new chunks from sample_docs/[/dim green]")
 
             with console.status("[bold green]Executing Self-Correcting RAG Workflow...[/bold green]", spinner="dots"):
                 response = rag_service.process_query(query=query, thread_id=thread_id)
