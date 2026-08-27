@@ -1,6 +1,6 @@
 import os
 import io
-from typing import List, Optional
+from typing import List, Optional, Dict
 import pypdf
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -17,6 +17,7 @@ class DocumentService:
             chunk_overlap=chunk_overlap,
             separators=["\n\n", "\n", " ", ""],
         )
+        self._synced_file_mtimes: Dict[str, float] = {}
 
     def extract_text_from_bytes(self, content_bytes: bytes, filename: str = "") -> str:
         """Extract text from raw bytes, handling PDF, Markdown, Text, and JSON."""
@@ -56,11 +57,13 @@ class DocumentService:
 
         text = self.extract_text_from_bytes(content_bytes, filename=filename)
 
-        return self.ingest_text(
+        chunks_count = self.ingest_text(
             text=text,
             title=filename,
             metadata={"source": file_path, "file_name": filename}
         )
+        self._synced_file_mtimes[file_path] = os.path.getmtime(file_path)
+        return chunks_count
 
     def ingest_directory(self, dir_path: str) -> int:
         if not os.path.exists(dir_path):
@@ -78,6 +81,32 @@ class DocumentService:
                     except Exception as e:
                         logger.error(f"Failed to ingest file '{file}': {e}")
         return total_chunks
+
+    def auto_sync_sample_docs(self, dir_path: Optional[str] = None) -> int:
+        """Checks for new or updated files in the sample docs directory and ingests them."""
+        target_dir = dir_path or os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "data", "sample_docs")
+        )
+        if not os.path.exists(target_dir):
+            return 0
+
+        new_chunks = 0
+        for root, _, files in os.walk(target_dir):
+            for file in files:
+                if file.endswith((".md", ".txt", ".json", ".rst", ".pdf")):
+                    full_path = os.path.join(root, file)
+                    current_mtime = os.path.getmtime(full_path)
+                    last_mtime = self._synced_file_mtimes.get(full_path)
+
+                    # Ingest if new or modified
+                    if last_mtime is None or current_mtime > last_mtime:
+                        try:
+                            chunks = self.ingest_file(full_path)
+                            new_chunks += chunks
+                            logger.info(f"Auto-synced new/modified file '{file}' ({chunks} chunks)")
+                        except Exception as e:
+                            logger.error(f"Failed to auto-sync file '{file}': {e}")
+        return new_chunks
 
 
 document_service = DocumentService()

@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from app.services.rag_service import rag_service
 from app.services.vector_service import vector_service
+from app.services.document_service import document_service
 
 console = Console()
 
@@ -19,7 +20,8 @@ def print_banner():
     console.print(
         Panel(
             "[bold cyan]Self-Correcting Agentic RAG System[/bold cyan]\n"
-            "[italic green]Powered by LangGraph, Google Gemini, ChromaDB & PostgreSQL[/italic green]",
+            "[italic green]Powered by LangGraph, ChromaDB, PostgreSQL & Ollama/Gemini[/italic green]\n"
+            "[dim]Commands: /seed, /ingest <path>, /stats, /help, exit[/dim]",
             border_style="bright_blue",
         )
     )
@@ -27,19 +29,69 @@ def print_banner():
 
 def interactive_repl():
     print_banner()
+    
+    # Auto-sync sample docs on startup
+    synced = document_service.auto_sync_sample_docs()
+    if synced > 0:
+        console.print(f"[green]✓ Auto-synced {synced} new document chunks from sample_docs/[/green]")
+
     thread_id = str(uuid.uuid4())[:8]
     console.print(f"[bold yellow]Session Thread ID:[/bold yellow] [bold green]{thread_id}[/bold green]")
     console.print(f"[bold yellow]Indexed Vector Chunks:[/bold yellow] [bold white]{vector_service().count()}[/bold white]\n")
-    console.print("[dim]Type your question or 'exit' / 'quit' to quit.[/dim]\n")
 
     while True:
         try:
             query = console.input("[bold cyan]Question ❯ [/bold cyan]").strip()
             if not query:
                 continue
+
+            # Command handling
             if query.lower() in ("exit", "quit", "q"):
                 console.print("[yellow]Goodbye![/yellow]")
                 break
+
+            if query.startswith("/"):
+                parts = query.split(maxsplit=1)
+                cmd = parts[0].lower()
+                arg = parts[1].strip() if len(parts) > 1 else ""
+
+                if cmd == "/seed":
+                    with console.status("[bold green]Seeding sample documents...[/bold green]"):
+                        count = document_service.ingest_directory("data/sample_docs")
+                    console.print(f"[green]✓ Re-seeded {count} chunks. Total in DB: {vector_service().count()}[/green]\n")
+                    continue
+
+                elif cmd == "/ingest":
+                    if not arg:
+                        console.print("[red]Usage: /ingest <path/to/file>[/red]\n")
+                        continue
+                    if not os.path.exists(arg):
+                        console.print(f"[red]File not found: {arg}[/red]\n")
+                        continue
+                    with console.status(f"[bold green]Ingesting {arg}...[/bold green]"):
+                        count = document_service.ingest_file(arg)
+                    console.print(f"[green]✓ Ingested {count} chunks from {arg}. Total in DB: {vector_service().count()}[/green]\n")
+                    continue
+
+                elif cmd == "/stats":
+                    total = vector_service().count()
+                    console.print(f"[bold green]Total Indexed Chunks in ChromaDB:[/bold green] [bold white]{total}[/bold white]\n")
+                    continue
+
+                elif cmd == "/help":
+                    console.print(
+                        "[bold cyan]Available Commands:[/bold cyan]\n"
+                        "  [bold green]/seed[/bold green]              - Re-indexes all docs in data/sample_docs/\n"
+                        "  [bold green]/ingest <file>[/bold green]     - Ingests a specific file (.txt, .pdf, .md, .json)\n"
+                        "  [bold green]/stats[/bold green]             - Shows total chunks in vector database\n"
+                        "  [bold green]exit[/bold green]               - Quits the CLI\n"
+                    )
+                    continue
+
+            # Auto-sync any newly added files before processing query
+            new_synced = document_service.auto_sync_sample_docs()
+            if new_synced > 0:
+                console.print(f"[dim green]✓ Auto-detected and indexed {new_synced} new chunks from sample_docs/[/dim green]")
 
             with console.status("[bold green]Executing Self-Correcting RAG Workflow...[/bold green]", spinner="dots"):
                 response = rag_service.process_query(query=query, thread_id=thread_id)
