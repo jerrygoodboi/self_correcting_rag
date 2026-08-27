@@ -1,6 +1,6 @@
 from typing import Any, Dict
 from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
+from app.core.llm_factory import get_chat_llm
 from app.agent.state import AgentState
 from app.agent.prompts.rewriting import QUERY_REWRITER_SYSTEM_PROMPT
 from app.schemas.evaluation import QueryRewrite
@@ -23,11 +23,7 @@ def rewrite_query_node(state: AgentState) -> Dict[str, Any]:
 
     logger.info(f"[Rewriter Node] (Retry #{retry_count}) Rewriting query: '{query_to_rewrite}'")
 
-    llm = ChatGoogleGenerativeAI(
-        model=settings.llm_model,
-        temperature=0.2,
-        google_api_key=settings.gemini_api_key,
-    )
+    llm = get_chat_llm(temperature=0.2)
     structured_rewriter = llm.with_structured_output(QueryRewrite)
 
     failure_context = (

@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.documents import Document
-from langchain_google_genai import ChatGoogleGenerativeAI
+from app.core.llm_factory import get_chat_llm
 from app.agent.state import AgentState
 from app.agent.prompts.grading import DOC_GRADER_SYSTEM_PROMPT
 from app.schemas.evaluation import GradeDocument
@@ -31,11 +31,7 @@ def grade_documents_node(state: AgentState) -> Dict[str, Any]:
             }]
         }
 
-    llm = ChatGoogleGenerativeAI(
-        model=settings.llm_model,
-        temperature=0.0,
-        google_api_key=settings.gemini_api_key,
-    )
+    llm = get_chat_llm(temperature=0.0)
     structured_grader = llm.with_structured_output(GradeDocument)
 
     filtered_docs: List[Document] = []

@@ -1,6 +1,6 @@
 from typing import Any, Dict
 from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
+from app.core.llm_factory import get_chat_llm
 from app.agent.state import AgentState
 from app.agent.prompts.generation import RAG_GENERATION_SYSTEM_PROMPT, DIRECT_ANSWER_SYSTEM_PROMPT
 from app.core.config import settings
@@ -23,11 +23,7 @@ def generate_rag_answer_node(state: AgentState) -> Dict[str, Any]:
 
     system_prompt = RAG_GENERATION_SYSTEM_PROMPT.format(context=context_text)
     
-    llm = ChatGoogleGenerativeAI(
-        model=settings.llm_model,
-        temperature=settings.llm_temperature,
-        google_api_key=settings.gemini_api_key,
-    )
+    llm = get_chat_llm(temperature=settings.llm_temperature)
     
     messages = [
         SystemMessage(content=system_prompt),
@@ -57,11 +53,7 @@ def generate_direct_answer_node(state: AgentState) -> Dict[str, Any]:
     query = state.get("query", "")
     logger.info(f"[Generator Node - Direct] Generating conversational response for: '{query}'")
 
-    llm = ChatGoogleGenerativeAI(
-        model=settings.llm_model,
-        temperature=0.7,
-        google_api_key=settings.gemini_api_key,
-    )
+    llm = get_chat_llm(temperature=0.7)
     
     messages = [
         SystemMessage(content=DIRECT_ANSWER_SYSTEM_PROMPT),

@@ -2,7 +2,7 @@ import os
 from typing import List, Optional
 from langchain_core.documents import Document
 from langchain_chroma import Chroma
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from app.core.llm_factory import get_embeddings
 from app.core.config import settings
 from app.core.logging import logger
 
@@ -13,10 +13,7 @@ class VectorService:
 
     def __init__(self):
         os.makedirs(settings.chroma_persist_dir, exist_ok=True)
-        self.embeddings = GoogleGenerativeAIEmbeddings(
-            model=settings.embedding_model,
-            google_api_key=settings.gemini_api_key,
-        )
+        self.embeddings = get_embeddings()
         self.vector_store = Chroma(
             collection_name=settings.chroma_collection_name,
             embedding_function=self.embeddings,

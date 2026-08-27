@@ -15,11 +15,20 @@ class Settings(BaseSettings):
     app_env: str = "development"
     log_level: str = "INFO"
 
-    # LLM Settings
+    # LLM Provider Configuration ("gemini" | "ollama")
+    llm_provider: str = "gemini"
     gemini_api_key: str = ""
     llm_model: str = "gemini-2.5-flash-lite"
     llm_temperature: float = 0.0
+    
+    # Ollama / Tailscale Configuration
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3.1:8b"
+    
+    # Embeddings Configuration ("gemini" | "ollama")
+    embedding_provider: str = "gemini"
     embedding_model: str = "gemini-embedding-001"
+    ollama_embedding_model: str = "nomic-embed-text"
 
     # Agent Parameters
     max_retries: int = 3
