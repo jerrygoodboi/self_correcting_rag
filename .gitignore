@@ -25,6 +25,8 @@ htmlcov/
 # Local databases & persistent runtime storage
 data/chromadb/
 data/checkpoints/
+data/sample_docs/*
+!data/sample_docs/.gitkeep
 *.db
 *.sqlite
 *.sqlite3
