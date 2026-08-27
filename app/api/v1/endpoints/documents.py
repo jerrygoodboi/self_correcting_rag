@@ -59,6 +59,21 @@ async def ingest_file_document(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/reset", summary="Reset / Wipe Chroma Vector Store")
+def reset_vectorstore():
+    """Wipes all documents in ChromaDB vector collection."""
+    try:
+        vector_service().reset_collection()
+        return {
+            "status": "success",
+            "message": "Chroma vectorstore collection wiped clean.",
+            "total_chunks": vector_service().count(),
+        }
+    except Exception as e:
+        logger.exception(f"Failed to reset vectorstore: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/stats", summary="Vector Store Statistics")
 def get_vectorstore_stats():
     """Returns vector database collection status and chunk count."""

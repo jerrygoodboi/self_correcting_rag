@@ -14,6 +14,9 @@ class VectorService:
     def __init__(self):
         os.makedirs(settings.chroma_persist_dir, exist_ok=True)
         self.embeddings = get_embeddings()
+        self._init_vector_store()
+
+    def _init_vector_store(self):
         self.vector_store = Chroma(
             collection_name=settings.chroma_collection_name,
             embedding_function=self.embeddings,
@@ -43,6 +46,25 @@ class VectorService:
         ids = self.vector_store.add_documents(documents)
         logger.info(f"Indexed {len(documents)} document chunks into Chroma")
         return ids
+
+    def delete_by_source(self, source_name: str) -> None:
+        """Deletes all chunks matching a specific source file to prevent duplicates."""
+        try:
+            # Delete by metadata filter
+            self.vector_store.delete(where={"file_name": source_name})
+            logger.info(f"Deleted existing vector chunks for source: '{source_name}'")
+        except Exception as e:
+            logger.debug(f"No existing chunks found or error deleting source '{source_name}': {e}")
+
+    def reset_collection(self) -> None:
+        """Completely wipes and re-initializes the ChromaDB collection."""
+        try:
+            self.vector_store.delete_collection()
+            self._init_vector_store()
+            logger.info("ChromaDB collection successfully reset and wiped clean.")
+        except Exception as e:
+            logger.error(f"Failed to reset ChromaDB collection: {e}")
+            self._init_vector_store()
 
     def count(self) -> int:
         try:

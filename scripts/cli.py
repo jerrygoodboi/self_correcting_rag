@@ -21,7 +21,7 @@ def print_banner():
         Panel(
             "[bold cyan]Self-Correcting Agentic RAG System[/bold cyan]\n"
             "[italic green]Powered by LangGraph, ChromaDB, PostgreSQL & Ollama/Gemini[/italic green]\n"
-            "[dim]Commands: /seed, /ingest <path>, /stats, /help, exit[/dim]",
+            "[dim]Commands: /seed (clean re-index), /ingest <path>, /reset, /stats, /help, exit[/dim]",
             border_style="bright_blue",
         )
     )
@@ -51,9 +51,16 @@ def interactive_repl():
                 arg = parts[1].strip() if len(parts) > 1 else ""
 
                 if cmd == "/seed":
-                    with console.status("[bold green]Seeding sample documents...[/bold green]"):
+                    with console.status("[bold green]Resetting & re-seeding sample documents...[/bold green]"):
+                        vector_service().reset_collection()
                         count = document_service.ingest_directory("data/sample_docs")
-                    console.print(f"[green]✓ Re-seeded {count} chunks. Total in DB: {vector_service().count()}[/green]\n")
+                    console.print(f"[green]✓ Cleanly re-seeded {count} chunks. Total in DB: {vector_service().count()}[/green]\n")
+                    continue
+
+                elif cmd == "/reset":
+                    with console.status("[bold yellow]Wiping ChromaDB collection...[/bold yellow]"):
+                        vector_service().reset_collection()
+                    console.print("[yellow]✓ ChromaDB collection wiped clean. Total in DB: 0[/yellow]\n")
                     continue
 
                 elif cmd == "/ingest":
@@ -76,7 +83,8 @@ def interactive_repl():
                 elif cmd == "/help":
                     console.print(
                         "[bold cyan]Available Commands:[/bold cyan]\n"
-                        "  [bold green]/seed[/bold green]              - Re-indexes all docs in data/sample_docs/\n"
+                        "  [bold green]/seed[/bold green]              - Cleanly re-indexes all docs in data/sample_docs/\n"
+                        "  [bold green]/reset[/bold green]             - Wipes all indexed documents from ChromaDB\n"
                         "  [bold green]/ingest <file>[/bold green]     - Ingests a specific file (.txt, .pdf, .md, .json)\n"
                         "  [bold green]/stats[/bold green]             - Shows total chunks in vector database\n"
                         "  [bold green]exit[/bold green]               - Quits the CLI\n"
